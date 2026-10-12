@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WanderWallet — Your Travel CFO</title>
+  <meta name="description"
+    content="WanderWallet — Your Travel CFO. Next-generation travel finance platform with real-time multi-currency FX, multimodal OCR receipt scanning, predictive spend forecasting, group settlement minimization, and proactive AI budget optimization." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles/main.css" />
+  <!-- Weather & Maps API Configuration -->
+  <script>
+    // Live APIs for Trip Explorer & Weather Forecast
+    window.OPENWEATHER_API_KEY = '03be34f98468f6c09b66d0a9363cd4b6';
+    window.GOOGLE_MAPS_API_KEY = '03be34f98468f6c09b66d0a9363cd4b6';
+  </script>
+  <!-- Leaflet CSS & JS for Interactive Day & Place Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script id="google-maps-script" defer></script>
+</head>
+
+<body>
+  <!-- ─── Header ─────────────────────────────────────────────────────── -->
+  <header class="header" id="main-header">
+    <div class="header-inner">
+      <div class="logo" id="brand-logo" style="cursor:pointer;" title="Go to Dashboard">
+        <div class="logo-icon">✈</div>
+        <div style="display:flex;flex-direction:column;">
+          <span class="logo-text">Wander<span class="logo-ai">Wallet</span></span>
+          <span
+            style="font-size:0.65rem;color:rgba(255,255,255,0.6);letter-spacing:0.04em;text-transform:uppercase;margin-top:-3px;">Your
+            Travel CFO</span>
+        </div>
+      </div>
+      <!-- ─── Action Buttons positioned strictly to the LEFT of the screen ─── -->
+      <div class="header-actions header-actions-left">
+        <button class="btn btn-primary btn-sm" id="btn-add-expense" aria-label="Add new expense">+ Expense</button>
+        <button class="btn btn-ghost btn-sm" id="btn-global-nl" style="color:white;border-color:rgba(255,255,255,0.2);"
+          title="Natural Language Expense Entry (⌘K)">
+          💬 <span style="font-size:0.75rem;opacity:0.8;font-family:var(--font-mono)">⌘K</span>
+        </button>
+        <!-- Primary Currency Selector -->
+        <div style="display:flex;align-items:center;gap:0.35rem;" title="Trip Base Currency">
+          <span style="font-size:0.75rem;color:rgba(255,255,255,0.5);">Base:</span>
+          <select id="primary-currency-select" class="currency-select-header" aria-label="Select Primary Trip Currency">
+            <option value="INR">🇮🇳 INR (₹)</option>
+            <option value="USD">🇺🇸 USD ($)</option>
+            <option value="EUR">🇪🇺 EUR (€)</option>
+            <option value="GBP">🇬🇧 GBP (£)</option>
+            <option value="THB">🇹🇭 THB (฿)</option>
+            <option value="SGD">🇸🇬 SGD (S$)</option>
+            <option value="JPY">🇯🇵 JPY (¥)</option>
+            <option value="AED">🇦🇪 AED (د.إ)</option>
+            <option value="AUD">🇦🇺 AUD (A$)</option>
+            <option value="CAD">🇨🇦 CAD (C$)</option>
+          </select>
+        </div>
+
+        <!-- Backend API Link & Status Indicator -->
+        <a href="http://localhost:5001/" target="_blank" class="backend-pill-link" id="backend-status-pill"
+          title="WanderWallet Backend API running on port 5001. Click to open API Dashboard.">
+          <span class="backend-dot-indicator"></span> API :5001
+        </a>
+
+        <!-- Trip Notifications & Budget Alerts Bell -->
+        <div class="notif-wrapper">
+          <button class="notif-btn" id="btn-notifications" aria-label="Trip alerts and notifications"
+            title="View budget cap alerts and settlements">
+            🔔<span class="notif-badge" id="notif-badge" style="display:none;">0</span>
+          </button>
+
+          <!-- Notification Dropdown Panel -->
+          <div class="notif-dropdown" id="notif-dropdown" style="display:none;" role="dialog" aria-label="Trip Alerts">
+            <div class="notif-header">
+              <div
+                style="font-weight:700;font-size:0.85rem;display:flex;align-items:center;gap:0.4rem;color:var(--text-primary);">
+                <span>🔔</span> Trip Alerts & Caps
+              </div>
+              <button class="notif-close-btn" id="btn-notif-close" aria-label="Close alerts">✕</button>
+            </div>
+            <div class="notif-body" id="notif-body">
+              <div class="notif-empty" id="notif-empty-state">
+                <span style="font-size:1.8rem;display:block;margin-bottom:0.4rem;">🎉</span>
+                <strong>All categories healthy!</strong>
+                <p style="margin-top:2px;font-size:0.75rem;color:var(--text-muted);">No budget cap breaches or overdue
+                  debts.</p>
+              </div>
+            </div>
+            <div class="notif-footer" id="notif-footer" style="display:none;">
+              <button class="notif-item-btn" id="btn-notif-clear-all"
+                style="background:transparent;color:var(--text-muted);">Dismiss All Alerts</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-ghost btn-sm" id="btn-auth-open"
+          style="border-radius:var(--r-full);padding:0.35rem 0.75rem;color:var(--accent-gold);border-color:rgba(212,160,23,0.3);">
+          👤 <span id="header-user-name">Anil</span>
+        </button>
+      </div>
+
+      <nav class="nav" role="navigation" aria-label="Main navigation">
+        <a href="#dashboard" class="nav-link active" id="nav-dashboard">Dashboard</a>
+        <a href="#transit" class="nav-link" id="nav-transit">🚆 Transit & Travel</a>
+        <a href="#itinerary" class="nav-link" id="nav-itinerary">🗓️ Itinerary</a>
+        <a href="#expenses" class="nav-link" id="nav-expenses">Expenses</a>
+        <a href="#budget" class="nav-link" id="nav-budget">Budget & Caps</a>
+        <a href="#settlement" class="nav-link" id="nav-settlement">Settlement</a>
+        <a href="#forecasting" class="nav-link" id="nav-forecasting">Forecasting</a>
+        <a href="#cfo-screen" class="nav-link" id="nav-cfo-screen">AI CFO</a>
+        <a href="#summary" class="nav-link" id="nav-summary">Summary Report</a>
+        <a href="#landing" class="nav-link" id="nav-landing">Showcase</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ─── Main Content ───────────────────────────────────────────────── -->
+  <main class="main-content" id="app-root">
+
+    <!-- ═══ SECTION 1: Landing Page Showcase ═══════════════════════════ -->
+    <section id="landing" class="section">
+      <div class="landing-hero">
+        <div class="landing-badge">
+          <span>✨</span> Intelligent Financial Companion for Modern Travelers
+        </div>
+        <h1 class="landing-title">Travel Freely.<br />Spend Smartly.</h1>
+        <p class="landing-subtitle">
+          Your AI-powered travel finance companion that tracks multi-currency expenses, predicts overspending before it
+          happens, simplifies group settlements, and keeps every journey on budget.
+        </p>
+        <div class="landing-cta-group">
+          <button class="btn btn-primary landing-cta-primary" id="btn-landing-start">
+            🚀 Start Your Journey
+          </button>
+          <button class="btn btn-ghost landing-cta-secondary" id="btn-landing-demo">
+            📊 Explore Live Dashboard
+          </button>
+        </div>
+
+        <!-- Floating Travel Cards Hero Visual -->
+        <div class="landing-visual-wrapper">
+          <!-- Floating Decorative Card 1 -->
+          <div class="floating-card floating-card-1">
+            <span style="font-size:1.4rem;">🦞</span>
+            <div style="text-align:left;">
+              <div style="font-size:0.85rem;font-weight:700;">Seafood Dinner Shack</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">$55.00 USD → ₹4,592.50 INR</div>
+            </div>
+            <span
+              style="background:rgba(198,40,40,0.12);color:#C62828;font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:4px;">FOOD
+              BREACH</span>
+          </div>
+
+          <!-- Floating Decorative Card 2 -->
+          <div class="floating-card floating-card-2">
+            <span style="font-size:1.4rem;">🤿</span>
+            <div style="text-align:left;">
+              <div style="font-size:0.85rem;font-weight:700;">Scuba Diving Excursion</div>
+              <div style="font-size:0.75rem;color:#059669;font-weight:600;">✅ Safe to Book Tomorrow</div>
+            </div>
+            <span
+              style="background:rgba(5,150,105,0.12);color:#059669;font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:4px;">CFO
+              APPROVED</span>
+          </div>
+
+          <!-- Floating Currency Orbs -->
+          <div class="floating-currency currency-sym-1">₹</div>
+          <div class="floating-currency currency-sym-2">$</div>
+          <div class="floating-currency currency-sym-3">€</div>
+
+          <!-- Central Interactive Preview -->
+          <div class="landing-preview-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+              <div>
+                <span
+                  style="font-size:0.78rem;font-weight:700;letter-spacing:0.06em;color:var(--primary);text-transform:uppercase;">Live
+                  CFO Intelligence</span>
+                <h3 style="font-family:var(--font-display);font-size:1.4rem;font-weight:700;margin-top:2px;">Goa
+                  Celebration 2026 🏖️</h3>
+              </div>
+              <span class="currency-badge" id="landing-currency-badge">₹ INR Base</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:1rem;margin-bottom:1.5rem;">
+              <div
+                style="background:var(--bg-canvas);padding:1rem;border-radius:var(--r-md);border:1px solid rgba(122,31,61,0.08);">
+                <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Trip Budget</span>
+                <span
+                  style="font-family:var(--font-mono);font-size:1.25rem;font-weight:700;color:var(--text-primary);">₹50,000</span>
+              </div>
+              <div
+                style="background:var(--bg-canvas);padding:1rem;border-radius:var(--r-md);border:1px solid rgba(122,31,61,0.08);">
+                <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Total Spent</span>
+                <span
+                  style="font-family:var(--font-mono);font-size:1.25rem;font-weight:700;color:var(--primary);">₹30,688</span>
+              </div>
+              <div
+                style="background:var(--bg-canvas);padding:1rem;border-radius:var(--r-md);border:1px solid rgba(122,31,61,0.08);">
+                <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Remaining Runway</span>
+                <span
+                  style="font-family:var(--font-mono);font-size:1.25rem;font-weight:700;color:#059669;">₹19,312</span>
+              </div>
+            </div>
+
+            <div
+              style="background:rgba(212,160,23,0.08);border:1px solid rgba(212,160,23,0.25);border-radius:var(--r-md);padding:0.9rem;display:flex;align-items:center;gap:0.75rem;">
+              <span style="font-size:1.2rem;">💡</span>
+              <div style="font-size:0.85rem;color:var(--text-secondary);">
+                <strong>AI Travel CFO Proactive Tip:</strong> Food spend is 18% higher than projected. Switching to
+                authentic beach shacks saves ~₹1,500/day and brings your forecast back to Safe Low Risk.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key Pillars Grid -->
+        <div class="landing-features-grid">
+          <div class="feature-box">
+            <div class="feature-icon-wrapper">📷</div>
+            <h3 class="feature-title">Multimodal OCR Scanner</h3>
+            <p class="feature-desc">Snap receipts anywhere in the world. Computer vision with animated laser extraction
+              accurately detects merchants, foreign amounts, currencies, and itemizations in seconds.</p>
+          </div>
+          <div class="feature-box">
+            <div class="feature-icon-wrapper">💱</div>
+            <h3 class="feature-title">Real-Time Global FX</h3>
+            <p class="feature-desc">Zero floating-point inaccuracies. Converts any world currency into your preferred
+              trip baseline using live ExchangeRate API feeds with dual-currency transparency.</p>
+          </div>
+          <div class="feature-box">
+            <div class="feature-icon-wrapper">👥</div>
+            <h3 class="feature-title">Min-Cash Settlement</h3>
+            <p class="feature-desc">Greedy transaction minimizer transforms messy group split chaos into the fewest
+              possible payments. Visual relationship lines show exactly who pays whom.</p>
+          </div>
+          <div class="feature-box">
+            <div class="feature-icon-wrapper">🤖</div>
+            <h3 class="feature-title">AI Travel CFO</h3>
+            <p class="feature-desc">Dedicated conversational companion grounded in your actual DB figures. Ask "Can I
+              afford scuba diving tomorrow?" or "Who owes me money?" for instant, verified answers.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION 2: Main Dashboard ═══════════════════════════════════ -->
+    <section id="dashboard" class="section active-section">
+      <div class="section-header section-header-left">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+            <h1 class="section-title" id="trip-title" style="margin-bottom:0;">Loading trip...</h1>
+            <span id="trip-style-badge"
+              style="font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:var(--r-full);background:rgba(122,31,61,0.08);color:var(--primary);text-transform:uppercase;">Moderate
+              Explorer</span>
+          </div>
+          <p class="section-subtitle" id="trip-dates"></p>
+        </div>
+        <div class="trip-selector" style="display:flex;align-items:center;gap:0.5rem;justify-content:flex-start;">
+          <select id="trip-select" class="select" aria-label="Select trip">
+            <option value="">Loading trips...</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" id="btn-new-trip-wizard"
+            title="Create a new trip with 5-step guided onboarding">+ New Trip</button>
+        </div>
+      </div>
+
+      <!-- Quick Action Toolbar strictly aligned to the LEFT -->
+      <div
+        style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.5rem;flex-wrap:wrap;justify-content:flex-start;">
+        <button class="btn btn-primary btn-sm" id="btn-quick-add">+ Add Expense</button>
+        <button class="btn btn-ghost btn-sm" id="btn-quick-transit"
+          title="Open multi-modal transit hub: Trains, Metro, Cabs, Flights">🚆 Transit & Travel</button>
+        <button class="btn btn-ghost btn-sm" id="btn-quick-ocr">📷 Scan Receipt</button>
+        <button class="btn btn-ghost btn-sm" id="btn-quick-nl">💬 Natural Language (⌘K)</button>
+        <button class="btn btn-ghost btn-sm" id="btn-quick-cfo">🤖 Ask CFO</button>
+        <button class="btn btn-ghost btn-sm" id="btn-quick-forecast">📈 View Forecast</button>
+        <button class="btn btn-ghost btn-sm" id="btn-quick-summary">📄 Audit Report</button>
+      </div>
+
+      <!-- KPI Cards Grid -->
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-total">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Total Spent</span>
+            <span class="kpi-value" id="kpi-spent">₹0</span>
+            <span class="kpi-sub" id="kpi-spent-sub">of ₹0 budget</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-remaining">
+          <div class="kpi-icon">🏦</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Remaining Runway</span>
+            <span class="kpi-value" id="kpi-remaining">₹0</span>
+            <span class="kpi-sub" id="kpi-remaining-sub">available</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-members">
+          <div class="kpi-icon">👥</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Travel Group</span>
+            <span class="kpi-value" id="kpi-members">0</span>
+            <span class="kpi-sub">active companions</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-expenses">
+          <div class="kpi-icon">🧾</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Logged Expenses</span>
+            <span class="kpi-value" id="kpi-expenses">0</span>
+            <span class="kpi-sub">with live FX audit</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Budget Card & AI Conversational Insights Row -->
+      <div class="charts-row">
+        <!-- Large Animated Budget Card with SVG Progress Ring -->
+        <div class="card chart-card budget-ring-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+            <h2 class="card-title" style="margin-bottom:0;">Budget Runway</h2>
+            <span id="burn-rate-badge"
+              style="font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:var(--r-full);background:rgba(212,160,23,0.15);color:var(--accent-gold);">Velocity:
+              Calibrating</span>
+          </div>
+          <div class="budget-ring-container">
+            <svg class="budget-ring" viewBox="0 0 200 200" id="budget-ring-svg">
+              <circle class="ring-track" cx="100" cy="100" r="80" />
+              <circle class="ring-progress" cx="100" cy="100" r="80" id="ring-progress" />
+            </svg>
+            <div class="ring-center">
+              <span class="ring-pct" id="ring-pct">0%</span>
+              <span class="ring-label">Allocated</span>
+            </div>
+          </div>
+          <div class="ring-legend">
+            <div class="legend-item"><span class="legend-dot dot-spent"></span>Spent</div>
+            <div class="legend-item"><span class="legend-dot dot-remaining"></span>Remaining</div>
+          </div>
+          <div
+            style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid rgba(122,31,61,0.08);display:flex;justify-content:space-between;font-size:0.8rem;">
+            <span style="color:var(--text-muted);">Safe Daily Burn:</span>
+            <strong id="kpi-safe-daily" style="font-family:var(--font-mono);">₹3,218 / day</strong>
+          </div>
+        </div>
+
+        <!-- AI Conversational Insights Card ("ChatGPT inside the dashboard") -->
+        <div class="card chart-card" style="display:flex;flex-direction:column;justify-content:space-between;">
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+              <h2 class="card-title" style="margin-bottom:0;">🤖 AI Financial CFO Insights</h2>
+              <span
+                style="font-size:0.72rem;background:rgba(5,150,105,0.1);color:#059669;font-weight:700;padding:2px 6px;border-radius:4px;">LIVE
+                COCKPIT</span>
+            </div>
+            <div id="ai-conversational-insights"
+              style="display:flex;flex-direction:column;gap:0.75rem;margin-top:0.5rem;">
+              <div
+                style="background:var(--bg-canvas);padding:0.85rem;border-radius:var(--r-md);border-left:3px solid var(--primary);font-size:0.86rem;line-height:1.5;">
+                💬 <strong>Spend Velocity:</strong> You are currently spending <strong>18% faster</strong> than expected
+                baseline.
+              </div>
+              <div
+                style="background:var(--bg-canvas);padding:0.85rem;border-radius:var(--r-md);border-left:3px solid var(--danger);font-size:0.86rem;line-height:1.5;">
+                🚨 <strong>Category Alert:</strong> Food & dining has breached cap by <strong>₹1,092.50</strong> due to
+                foreign USD dinner ($55 converted at 83.50).
+              </div>
+              <div
+                style="background:var(--bg-canvas);padding:0.85rem;border-radius:var(--r-md);border-left:3px solid #059669;font-size:0.86rem;line-height:1.5;">
+                🤿 <strong>Activity Affirmation:</strong> You can comfortably afford the ₹4,500 Scuba Diving session
+                tomorrow with ₹14,812 remaining safe runway.
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:1rem;display:flex;gap:0.5rem;">
+            <button class="btn btn-primary btn-sm btn-full" id="btn-dashboard-ask-cfo">Ask Travel CFO a Question
+              →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Budget Optimizer & Proactive Recommendations Card -->
+      <div class="card recommendations-card" id="dashboard-recommendations-widget">
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+          <div>
+            <h3
+              style="font-family:var(--font-display);font-size:1.25rem;font-weight:700;color:var(--text-primary);margin-bottom:2px;">
+              💡 AI Budget Optimizer & Local Alternatives
+            </h3>
+            <p style="font-size:0.82rem;color:var(--text-secondary);" id="rec-rebalance-text">
+              Proactive suggestions calibrated for your destination and travel style.
+            </p>
+          </div>
+          <span class="rec-badge-savings" id="rec-total-savings-pill">Potential Savings: ₹6,500</span>
+        </div>
+
+        <div id="recommendations-container">
+          <div class="empty-state-mini">Loading intelligent recommendations...</div>
+        </div>
+      </div>
+
+      <!-- Analytics Row: Category Breakdown + Daily Spend + FX Currency Converter -->
+      <div class="charts-row" style="margin-top:1.5rem;">
+        <div class="card chart-card category-chart-card">
+          <h2 class="card-title">Spend by Category & Caps</h2>
+          <div class="category-bars" id="category-bars">
+            <div class="empty-state-mini">Loading...</div>
+          </div>
+        </div>
+
+        <div class="card chart-card daily-chart-card">
+          <h2 class="card-title">Daily Spending Trend</h2>
+          <div class="daily-bars" id="daily-bars">
+            <div class="empty-state-mini">No data yet</div>
+          </div>
+        </div>
+
+        <!-- Live FX Currency Converter Widget -->
+        <div class="card chart-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h2 class="card-title" style="margin-bottom:0;">💱 Real-Time FX Converter</h2>
+            <span style="font-size:0.68rem;color:var(--text-muted);font-family:var(--font-mono)">Live
+              ExchangeRate-API</span>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.35rem;">
+            Instant decimal conversion between global currencies.
+          </p>
+
+          <div style="margin-top:0.75rem;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.5rem;">
+              <div>
+                <label class="form-label" style="font-size:0.72rem;">From Currency</label>
+                <select id="conv-from-cur" class="select select-sm">
+                  <option value="USD" selected>USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="INR">INR (₹)</option>
+                  <option value="THB">THB (฿)</option>
+                  <option value="SGD">SGD (S$)</option>
+                  <option value="JPY">JPY (¥)</option>
+                  <option value="AED">AED (د.إ)</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label" style="font-size:0.72rem;">To Currency</label>
+                <select id="conv-to-cur" class="select select-sm">
+                  <option value="INR" selected>INR (₹)</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="THB">THB (฿)</option>
+                  <option value="SGD">SGD (S$)</option>
+                  <option value="JPY">JPY (¥)</option>
+                  <option value="AED">AED (د.إ)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:0.5rem;">
+              <input type="number" id="conv-amount" class="input input-sm" placeholder="100.00" value="55"
+                step="0.01" />
+              <button class="btn btn-primary btn-sm" id="btn-do-convert">Convert</button>
+            </div>
+
+            <div id="conv-result-pill"
+              style="margin-top:0.75rem;padding:0.6rem;background:var(--bg-canvas);border-radius:var(--r-md);font-family:var(--font-mono);font-size:0.85rem;text-align:center;font-weight:600;color:var(--primary);">
+              $55.00 USD = ₹4,592.50 INR (@ 83.5000)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Group Settlement Matrix Preview -->
+      <div class="card" style="margin-top:1.5rem;">
+        <div class="card-header-row">
+          <div>
+            <h2 class="card-title" style="margin-bottom:2px;">👥 Group Settlement Matrix</h2>
+            <p style="font-size:0.8rem;color:var(--text-secondary);">Minimal transaction graph generated by the greedy
+              creditor-debtor algorithm.</p>
+          </div>
+          <button class="btn btn-sm btn-ghost" id="btn-settle-all-action">Settle Up All →</button>
+        </div>
+        <div id="dashboard-settlement-preview"
+          style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:0.75rem;margin-top:0.75rem;">
+          <div class="empty-state-mini">Calculating balances...</div>
+        </div>
+      </div>
+
+      <!-- Recent Expenses Ledger with Dual Currency Display -->
+      <div class="card expenses-card" style="margin-top:1.5rem;">
+        <div class="card-header-row">
+          <div>
+            <h2 class="card-title" style="margin-bottom:2px;">Recent Expenses</h2>
+            <p style="font-size:0.8rem;color:var(--text-secondary);">Dual-currency view: original currency with verified
+              home conversion.</p>
+          </div>
+          <button class="btn btn-sm btn-ghost" id="btn-view-all-expenses">View All →</button>
+        </div>
+        <div id="recent-expenses-list" class="expenses-list">
+          <div class="empty-state">
+            <div class="empty-icon">🧾</div>
+            <p>No expenses yet. <button class="link-btn" id="btn-add-first">Add your first expense →</button></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION 2A: Multi-Modal Transit & Travel Hub ═══════════════ -->
+    <section id="transit" class="section">
+      <div class="section-header section-header-left">
+        <div style="text-align:left;">
+          <h2 class="section-title">🚆 Multi-Modal Transit & Travel Hub</h2>
+          <p class="section-subtitle" id="transit-subtitle">
+            Every way to travel: Flights, High-Speed Trains, City Metro, Rideshare Cabs, Rentals & Scenic Ferries with
+            direct booking links
+          </p>
+        </div>
+        <!-- Buttons strictly aligned to the LEFT of the screen -->
+        <div style="display:flex;gap:0.6rem;align-items:center;flex-wrap:wrap;justify-content:flex-start;">
+          <button class="btn btn-primary btn-sm" id="btn-transit-search-trigger">🔍 Search All Travel Modes</button>
+          <button class="btn btn-ghost btn-sm" id="btn-transit-jump-itinerary">🗓️ View Itinerary</button>
+        </div>
+      </div>
+
+      <!-- Transit Journey Route & Destination Selector Card -->
+      <div class="card" style="padding:1.25rem;margin-bottom:1.5rem;text-align:left;">
+        <div
+          style="font-weight:700;font-size:0.95rem;color:var(--text-primary);margin-bottom:0.75rem;display:flex;align-items:center;gap:0.4rem;">
+          <span>🛫 Plan Your Journey Route & Transit Modes</span>
+          <span style="font-size:0.75rem;font-weight:500;color:var(--text-muted);">(Origin ➔ Destination)</span>
+        </div>
+
+        <div class="journey-inputs-grid"
+          style="display:grid;grid-template-columns:1fr auto 1fr;gap:0.75rem;align-items:center;">
+          <div style="position:relative;">
+            <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);font-size:0.95rem;">🚩</span>
+            <input type="text" id="transit-origin-input" class="input input-sm"
+              placeholder="Start Place (e.g. Mumbai, New Delhi, London...)" style="padding-left:2.2rem;font-weight:600;"
+              value="Mumbai, India" />
+          </div>
+          <div class="journey-arrow-indicator"
+            style="font-size:1.3rem;color:var(--primary);font-weight:700;text-align:center;">➔</div>
+          <div style="position:relative;">
+            <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);font-size:0.95rem;">📍</span>
+            <input type="text" id="transit-dest-input" class="input input-sm"
+              placeholder="Destination (e.g. Goa, Bali, Paris, Dubai...)" style="padding-left:2.2rem;font-weight:600;"
+              value="Goa, India" />
+          </div>
+        </div>
+
+        <!-- Quick Route Preset Pills aligned to the LEFT -->
+        <div class="quick-route-pills-left">
+          <span style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">Popular Routes:</span>
+          <button class="route-pill-btn" onclick="applyTransitPreset('Mumbai, India', 'Goa, India')">🏖️ Mumbai ➔
+            Goa</button>
+          <button class="route-pill-btn" onclick="applyTransitPreset('Bengaluru, India', 'Bali, Indonesia')">🌴 BLR ➔
+            Bali</button>
+          <button class="route-pill-btn" onclick="applyTransitPreset('London, UK', 'Paris, France')">🗼 London ➔
+            Paris</button>
+          <button class="route-pill-btn" onclick="applyTransitPreset('Paris, France', 'London, UK')">🏴󠁧󠁢󠁥󠁮󠁧󠁿
+            Paris ➔ London</button>
+          <button class="route-pill-btn" onclick="applyTransitPreset('Mumbai, India', 'Dubai, UAE')">🏙️ Mumbai ➔
+            Dubai</button>
+          <button class="route-pill-btn" onclick="applyTransitPreset('New Delhi, India', 'Kashmir, India')">🏔️ Delhi ➔
+            Kashmir</button>
+        </div>
+
+        <!-- Action buttons strictly on the LEFT -->
+        <div
+          style="display:flex;align-items:center;justify-content:flex-start;gap:0.6rem;margin-top:1rem;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" id="btn-transit-search">🔍 Compare All Travel Ways</button>
+          <button class="btn btn-ghost btn-sm" id="btn-transit-save-route">💾 Save as Trip Default Route</button>
+        </div>
+      </div>
+
+      <!-- Smart CFO Transport Summary KPI Bar (Grounding: PDF budgets.transport_cap & carbon_kg) -->
+      <div class="transit-kpi-grid" id="transit-kpi-grid">
+        <div class="transit-kpi-card">
+          <div class="transit-kpi-icon" style="background:rgba(2,132,199,0.1);color:#0284c7;">⚡</div>
+          <div>
+            <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Fastest Way
+            </div>
+            <div id="transit-kpi-fastest"
+              style="font-family:var(--font-display);font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-top:2px;">
+              IndiGo Flight (1h 15m)</div>
+            <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px;">Airport-to-airport direct</div>
+          </div>
+        </div>
+
+        <div class="transit-kpi-card">
+          <div class="transit-kpi-icon" style="background:rgba(212,160,23,0.1);color:#d97706;">💰</div>
+          <div>
+            <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Cheapest
+              Way</div>
+            <div id="transit-kpi-cheapest"
+              style="font-family:var(--font-display);font-size:0.95rem;font-weight:700;color:#d97706;margin-top:2px;">
+              River Ferry (₹10 / Free)</div>
+            <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px;">Or Mandovi Express ₹490</div>
+          </div>
+        </div>
+
+        <div class="transit-kpi-card">
+          <div class="transit-kpi-icon" style="background:rgba(16,185,129,0.1);color:#059669;">🌿</div>
+          <div>
+            <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">
+              Eco-Champion</div>
+            <div id="transit-kpi-eco"
+              style="font-family:var(--font-display);font-size:0.95rem;font-weight:700;color:#059669;margin-top:2px;">
+              Vande Bharat (12.1 kg CO2)</div>
+            <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px;">85% lower emissions than flying
+            </div>
+          </div>
+        </div>
+
+        <div class="transit-kpi-card">
+          <div class="transit-kpi-icon" style="background:rgba(122,31,61,0.1);color:var(--primary);">📊</div>
+          <div>
+            <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Transport
+              Budget Cap</div>
+            <div id="transit-kpi-budget"
+              style="font-family:var(--font-mono);font-size:1.1rem;font-weight:800;color:var(--primary);margin-top:2px;">
+              ₹15,000</div>
+            <div id="transit-kpi-budget-sub" style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px;">₹0
+              logged · safe runway</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode Filters kept strictly to the LEFT -->
+      <div class="transit-mode-filters-left" id="transit-mode-filters">
+        <button class="btn btn-sm btn-primary transit-filter-btn active" data-mode="all">✨ All Modes (<span
+            id="count-all-modes">16</span>)</button>
+        <button class="btn btn-sm btn-ghost transit-filter-btn" data-mode="flights">✈️ Flights (<span
+            id="count-flights">3</span>)</button>
+        <button class="btn btn-sm btn-ghost transit-filter-btn" data-mode="trains">🚆 Trains & Rail (<span
+            id="count-trains">3</span>)</button>
+        <button class="btn btn-sm btn-ghost transit-filter-btn" data-mode="metro">🚇 Metro & Rapid Transit (<span
+            id="count-metro">2</span>)</button>
+        <button class="btn btn-sm btn-ghost transit-filter-btn" data-mode="cabs">🚕 Cabs & Rideshare (<span
+            id="count-cabs">3</span>)</button>
+        <button class="btn btn-sm btn-ghost transit-filter-btn" data-mode="rentals">🛵 Rentals & Scooters (<span
+            id="count-rentals">3</span>)</button>
+        <button class="btn btn-sm btn-ghost transit-filter-btn" data-mode="ferries">⛴️ Ferries & Water (<span
+            id="count-ferries">2</span>)</button>
+      </div>
+
+      <!-- Multi-Modal Cards Grid -->
+      <div id="transit-cards-grid" class="transit-cards-grid">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+    </section>
+
+    <!-- ═══ SECTION 2B: Itinerary Planner & Map Explorer ═══════════════ -->
+    <section id="itinerary" class="section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">🗓️ Trip Itinerary & Maps Explorer</h2>
+          <p class="section-subtitle" id="itinerary-subtitle">Day-by-day curated places with interactive maps, live
+            destination weather, and price tiers (Free, Budget-Friendly, Expensive)</p>
+        </div>
+        <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;justify-content:flex-start;">
+          <button class="btn btn-primary btn-sm" id="btn-itinerary-add-place">📍 + Add Place</button>
+          <button class="btn btn-ghost btn-sm" id="btn-itinerary-seed-demo"
+            title="Load complete 7-day activities for this destination">🎲 Reseed All Days</button>
+        </div>
+      </div>
+
+      <!-- Live Destination Weather Bar (OpenWeatherMap API: 03be34f98468f6c09b66d0a9363cd4b6) -->
+      <div class="itinerary-weather-bar" id="itinerary-weather-bar">
+        <div class="weather-main-info">
+          <div class="weather-icon-lg" id="weather-icon">⛅</div>
+          <div class="weather-temp-wrap">
+            <span class="weather-temp-deg" id="weather-temp">--°C</span>
+            <span class="weather-desc-text" id="weather-desc">Loading live destination weather...</span>
+          </div>
+        </div>
+        <div class="weather-metrics-pills">
+          <div class="weather-metric-pill">💧 Humidity: <strong id="weather-humidity">--%</strong></div>
+          <div class="weather-metric-pill">💨 Wind: <strong id="weather-wind">-- km/h</strong></div>
+          <div class="weather-metric-pill">🧭 Pres: <strong id="weather-pressure">-- hPa</strong></div>
+          <div class="weather-key-chip" title="Live synced via OpenWeatherMap">
+            🔑 API Connected
+          </div>
+        </div>
+      </div>
+
+      <!-- Itinerary Stats & Price Tier Filter Chips -->
+      <div class="itinerary-stat-chips" id="itinerary-stat-chips">
+        <div class="itinerary-stat-chip active-filter" data-filter="all" id="itn-filter-all">
+          ✨ All Places: <strong id="itn-stat-activities">0</strong>
+        </div>
+        <div class="itinerary-stat-chip" data-filter="free" id="itn-filter-free">
+          🟢 Free: <strong id="itn-stat-free">0</strong>
+        </div>
+        <div class="itinerary-stat-chip" data-filter="budget" id="itn-filter-budget">
+          🟡 Budget-Friendly: <strong id="itn-stat-budget">0</strong>
+        </div>
+        <div class="itinerary-stat-chip" data-filter="expensive" id="itn-filter-expensive">
+          🔴 Expensive: <strong id="itn-stat-expensive">0</strong>
+        </div>
+        <div class="itinerary-stat-chip" style="cursor:default;">
+          📅 Days: <strong id="itn-stat-days">0</strong>
+        </div>
+        <div class="itinerary-stat-chip" style="cursor:default;">
+          💰 Est. Total: <strong id="itn-stat-cost">₹0</strong>
+        </div>
+        <div class="itinerary-stat-chip" style="cursor:default;">
+          🧾 Spent: <strong id="itn-stat-expenses">₹0</strong>
+        </div>
+      </div>
+
+      <!-- ─── Journey Route Bar (Start Place & Destination) ─────────────── -->
+      <div class="journey-route-card" id="journey-route-card">
+        <div
+          style="font-weight:700;font-size:0.95rem;color:var(--text-primary);margin-bottom:0.75rem;text-align:left;display:flex;align-items:center;gap:0.4rem;">
+          <span>🛫 Journey Route & Transit Planner</span>
+          <span style="font-size:0.75rem;font-weight:500;color:var(--text-muted);">(Set Start Place &
+            Destination)</span>
+        </div>
+
+        <div class="journey-inputs-grid">
+          <div style="position:relative;">
+            <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);font-size:0.95rem;">🚩</span>
+            <input type="text" id="itinerary-start-place" class="input input-sm"
+              placeholder="Start Place (e.g. Mumbai, New Delhi, London...)" style="padding-left:2.2rem;font-weight:600;"
+              value="Mumbai, India" />
+          </div>
+          <div class="journey-arrow-indicator">➔</div>
+          <div style="position:relative;">
+            <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);font-size:0.95rem;">📍</span>
+            <input type="text" id="itinerary-dest-place" class="input input-sm"
+              placeholder="Destination (e.g. Goa, Bali, Paris, Dubai...)" style="padding-left:2.2rem;font-weight:600;"
+              value="Goa, India" />
+          </div>
+        </div>
+
+        <!-- Action buttons kept strictly to the LEFT -->
+        <div class="journey-actions-left">
+          <button class="btn btn-primary btn-sm" id="btn-search-hotels-route">
+            🔍 Search Route & Stays
+          </button>
+          <button class="btn btn-ghost btn-sm" id="btn-save-trip-route" title="Save route to trip">
+            💾 Save Trip Route
+          </button>
+        </div>
+
+        <!-- Transit Information Ribbon -->
+        <div id="itinerary-transit-ribbon" class="transit-ribbon">
+          <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;justify-content:flex-start;">
+            <span id="transit-flight-badge" class="transit-flight-badge">
+              ✈️ Flight: BOM → GOI (1h 15m)
+            </span>
+            <span id="transit-fare-est" class="transit-fare-est">
+              IndiGo / Air India · Approx ₹3,200
+            </span>
+            <span id="transit-alt-est" class="transit-alt-est">
+              🚆 Vande Bharat (8h 20m) · 580 km
+            </span>
+          </div>
+          <div style="display:flex;justify-content:flex-start;">
+            <a id="transit-booking-link" href="https://www.google.com/travel/flights" target="_blank"
+              rel="noopener noreferrer" class="btn btn-ghost btn-sm" style="font-size:0.75rem;padding:3px 9px;">
+              🎫 Compare Flights ↗
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Curated Hotels & Recommended Stays Section ───────────────── -->
+      <div class="hotels-section" id="itinerary-hotels-section">
+        <div class="hotels-header-row">
+          <div style="text-align:left;">
+            <h3
+              style="font-family:var(--font-display);font-size:1.2rem;font-weight:700;margin:0;color:var(--text-primary);display:flex;align-items:center;gap:0.5rem;">
+              <span>🏨 Curated Hotel Stays & Recommendations</span>
+              <span id="hotels-count-badge" class="badge"
+                style="font-size:0.72rem;background:rgba(122,31,61,0.1);color:var(--primary);padding:2px 8px;border-radius:var(--r-full);">4
+                Stays</span>
+            </h3>
+            <p style="font-size:0.78rem;color:var(--text-muted);margin:3px 0 0 0;">
+              Handpicked verified stays with live nightly rates, CFO recommendation analysis, and direct verified
+              booking links
+            </p>
+          </div>
+          <!-- Filter buttons kept strictly to the LEFT -->
+          <div class="hotel-filters-left" id="hotel-filter-buttons">
+            <button class="btn btn-sm btn-primary hotel-filter-btn active" data-filter="all">All Stays</button>
+            <button class="btn btn-sm btn-ghost hotel-filter-btn" data-filter="recommended">⭐ Recommended</button>
+            <button class="btn btn-sm btn-ghost hotel-filter-btn" data-filter="luxury">👑 Luxury</button>
+            <button class="btn btn-sm btn-ghost hotel-filter-btn" data-filter="budget">🎒 Budget</button>
+          </div>
+        </div>
+
+        <!-- Hotels Cards Grid -->
+        <div id="hotels-grid" class="hotels-grid">
+          <!-- Populated dynamically via app.js -->
+        </div>
+      </div>
+
+      <!-- Interactive Trip & Day Map Card -->
+      <div class="itinerary-map-card" id="itinerary-map-card">
+        <div class="itinerary-map-header">
+          <div class="map-title-row">
+            <span style="font-size:1.2rem;">🗺️</span>
+            <div>
+              <div class="map-title-text" id="map-heading-text">Trip Places & Waypoints Map</div>
+              <div style="font-size:0.72rem;color:var(--text-muted);" id="map-sub-text">Interactive route showing
+                categorized pins for each stop</div>
+            </div>
+          </div>
+          <div class="map-controls-row">
+            <select id="itinerary-map-day-select" class="select select-sm" style="min-width:140px;">
+              <option value="all">🗺️ All Days Route</option>
+            </select>
+            <select id="itinerary-map-tier-select" class="select select-sm" style="min-width:145px;">
+              <option value="all">🏷️ All Categories</option>
+              <option value="free">🟢 Free Only</option>
+              <option value="budget">🟡 Budget Only</option>
+              <option value="expensive">🔴 Expensive Only</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" id="btn-toggle-weather-radar"
+              title="Toggle OpenWeatherMap Clouds Radar overlay">
+              ☁️ Cloud Radar
+            </button>
+            <button class="btn btn-ghost btn-sm" id="btn-fit-map" title="Fit all markers in view">
+              🎯 Fit Map
+            </button>
+          </div>
+        </div>
+        <div class="map-canvas-container">
+          <div id="itinerary-leaflet-map"></div>
+        </div>
+      </div>
+
+      <!-- Quick Add Place Bar -->
+      <div class="card" style="padding:1.15rem;margin-bottom:1.5rem;">
+        <div
+          style="font-size:0.8rem;font-weight:700;margin-bottom:0.75rem;color:var(--text-primary);display:flex;align-items:center;gap:0.4rem;">
+          <span>⚡ Fast Add Place to Itinerary</span>
+          <span style="font-weight:400;color:var(--text-muted);font-size:0.75rem;">(with price category & day
+            mapping)</span>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+          <select id="itinerary-add-to-day" class="select select-sm" style="min-width:110px;"></select>
+          <div style="position:relative;flex:1;min-width:200px;">
+            <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);font-size:0.9rem;">📍</span>
+            <input type="text" id="places-search-input" class="input input-sm"
+              placeholder="Place name, beach, restaurant, fort..." style="padding-left:2.2rem;" autocomplete="off" />
+            <div id="places-suggestions" class="places-suggestions" style="display:none;"></div>
+          </div>
+          <select id="itinerary-add-tier" class="select select-sm" style="min-width:140px;font-weight:600;">
+            <option value="free">🟢 Free (₹0)</option>
+            <option value="budget" selected>🟡 Budget-Friendly</option>
+            <option value="expensive">🔴 Expensive</option>
+          </select>
+          <select id="itinerary-add-type" class="select select-sm" style="min-width:115px;">
+            <option value="activity">🎯 Activity</option>
+            <option value="meal">🍽️ Meal</option>
+            <option value="hotel">🏨 Hotel</option>
+            <option value="transport">🚗 Transport</option>
+            <option value="flight">✈️ Flight</option>
+            <option value="other">📦 Other</option>
+          </select>
+          <input type="number" id="itinerary-est-cost" class="input input-sm" placeholder="Est. cost"
+            style="max-width:105px;" value="500" />
+          <button class="btn btn-primary btn-sm" id="btn-add-place-to-day">+ Add to Day</button>
+        </div>
+      </div>
+
+      <!-- Day-by-Day Timeline -->
+      <div id="itinerary-timeline" class="itinerary-timeline">
+        <div class="empty-state">
+          <div class="empty-icon">🗺️</div>
+          <p>Loading trip itinerary & day maps...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION 3: Expenses Ledger ══════════════════════════════════ -->
+    <section id="expenses" class="section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">All Expenses & Audit Trail</h2>
+          <p class="section-subtitle" id="expenses-count">0 expenses</p>
+        </div>
+        <div class="filter-row">
+          <input type="text" id="filter-search" class="input input-sm" placeholder="🔍 Search expenses..."
+            style="max-width:180px;" />
+          <select id="filter-category" class="select select-sm" aria-label="Filter by category">
+            <option value="">All Categories</option>
+            <option value="accommodation">🏨 Accommodation</option>
+            <option value="transport">🚗 Transport</option>
+            <option value="food">🍽️ Food</option>
+            <option value="activities">🎯 Activities</option>
+            <option value="shopping">🛍️ Shopping</option>
+            <option value="health">💊 Health</option>
+            <option value="entertainment">🎭 Entertainment</option>
+            <option value="misc">📦 Misc</option>
+          </select>
+          <select id="filter-currency" class="select select-sm" aria-label="Filter by currency">
+            <option value="">All Currencies</option>
+            <option value="INR">INR (₹)</option>
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="GBP">GBP (£)</option>
+            <option value="THB">THB (฿)</option>
+            <option value="SGD">SGD (S$)</option>
+          </select>
+          <button class="btn btn-primary" id="btn-add-expense-2">+ Add Expense</button>
+        </div>
+      </div>
+      <div class="card">
+        <div id="all-expenses-list" class="expenses-list">
+          <div class="empty-state">
+            <div class="empty-icon">🧾</div>
+            <p>No expenses yet.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION 4: Budget & Category Caps ═══════════════════════════ -->
+    <section id="budget" class="section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Budget Calibration & Category Caps</h2>
+          <p class="section-subtitle">Enforce hard spending ceilings across food, transport, stays, and activities.</p>
+        </div>
+      </div>
+      <div class="budget-grid">
+        <div class="card">
+          <h3 class="card-title">Set Budget & Caps</h3>
+          <form id="budget-form" class="form">
+            <div class="form-group">
+              <label class="form-label">Total Trip Budget (<span class="budget-cur-label">INR</span>) *</label>
+              <input type="number" id="bud-total" class="input" placeholder="50000" min="1" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Alert Threshold %</label>
+              <input type="number" id="bud-threshold" class="input" placeholder="80" min="1" max="100" value="80" />
+            </div>
+            <div class="caps-grid">
+              <div class="form-group">
+                <label class="form-label">🏨 Accommodation Cap</label>
+                <input type="number" id="cap-accommodation" class="input" placeholder="18000" min="0" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">🚗 Transport Cap</label>
+                <input type="number" id="cap-transport" class="input" placeholder="8000" min="0" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">🍽️ Food Cap</label>
+                <input type="number" id="cap-food" class="input" placeholder="6000" min="0" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">🎯 Activities Cap</label>
+                <input type="number" id="cap-activities" class="input" placeholder="10000" min="0" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">📦 Misc Cap</label>
+                <input type="number" id="cap-misc" class="input" placeholder="4000" min="0" />
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Save Budget & Calibrate</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Real-Time Cap Status</h3>
+          <div id="cap-status-list" class="cap-status-list">
+            <div class="empty-state-mini">Set a budget to see cap status.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION 5: Group Settlement ═════════════════════════════════ -->
+    <section id="settlement" class="section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Group Debt Simplification Matrix</h2>
+          <p class="section-subtitle">Eliminates circular payments using net-balance greedy matching.</p>
+        </div>
+        <button class="btn btn-primary" id="btn-calc-settlement">Recalculate Settlement</button>
+      </div>
+      <div class="settlement-grid">
+        <div class="card">
+          <h3 class="card-title">Net Companion Balances</h3>
+          <div id="balance-list" class="balance-list">
+            <div class="empty-state-mini">Click "Recalculate Settlement"</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Minimized Transactions</h3>
+          <div id="transaction-list" class="transaction-list">
+            <div class="empty-state-mini">No transactions yet.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION 6: Spend Forecasting & Simulator ════════════════════ -->
+    <section id="forecasting" class="section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">📈 Predictive Spend Forecasting & What-If Simulator</h2>
+          <p class="section-subtitle">Recency-weighted burn rate trajectory and excursion impact simulator.</p>
+        </div>
+        <button class="btn btn-primary" id="btn-forecast-refresh">Generate Live Forecast</button>
+      </div>
+
+      <div class="card">
+        <div id="forecast-full-container">
+          <div style="text-align:center;padding:1.5rem;">
+            <button class="btn btn-primary" id="btn-init-forecast">Generate Statistical Forecast →</button>
+          </div>
+        </div>
+
+        <!-- Interactive What-If Simulator -->
+        <div class="simulator-box" id="what-if-simulator-box" style="display:none;">
+          <h4 style="font-family:var(--font-display);font-size:1.15rem;font-weight:700;margin-bottom:0.25rem;">
+            🔮 What-If Excursion Impact Simulator
+          </h4>
+          <p style="font-size:0.82rem;color:var(--text-secondary);">
+            Slide to simulate a future activity or dinner expense before committing. Watch your end-of-trip risk adjust
+            dynamically.
+          </p>
+
+          <div style="margin:1rem 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-weight:600;font-size:0.88rem;">Planned Extra Expense:</span>
+              <span id="slider-val-label"
+                style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--primary);">₹4,500</span>
+            </div>
+            <input type="range" id="what-if-slider" class="sim-slider" min="500" max="20000" step="500" value="4500" />
+          </div>
+
+          <div
+            style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:0.75rem;background:var(--bg-canvas);padding:1rem;border-radius:var(--r-md);"
+            id="what-if-results">
+            <div>
+              <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Simulated Total Spend:</span>
+              <strong id="sim-projected-total"
+                style="font-family:var(--font-mono);font-size:1rem;color:var(--text-primary);">₹35,188</strong>
+            </div>
+            <div>
+              <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Simulated Remaining Runway:</span>
+              <strong id="sim-projected-remaining"
+                style="font-family:var(--font-mono);font-size:1rem;color:#059669;">₹14,812</strong>
+            </div>
+            <div>
+              <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Predicted Risk Level:</span>
+              <span id="sim-risk-badge" class="risk-badge risk-low">LOW RISK</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION 7: Dedicated AI CFO Chat Screen ═════════════════════ -->
+    <section id="cfo-screen" class="section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">🤖 AI Travel CFO Interactive Cockpit</h2>
+          <p class="section-subtitle">Real-time budget analysis, affordability audits, and local destination tips.</p>
+        </div>
+      </div>
+
+      <div class="card ai-card cfo-card"
+        style="max-width:850px;margin:0 auto;height:650px;display:flex;flex-direction:column;">
+        <div class="ai-card-header" style="padding-bottom:0.75rem;border-bottom:1px solid rgba(122,31,61,0.08);">
+          <span class="ai-icon">🤖</span>
+          <div>
+            <h3 class="ai-card-title">Travel CFO Intelligence</h3>
+            <p class="ai-card-desc">Deterministic DB verification with zero hallucination</p>
+          </div>
+        </div>
+
+        <!-- Quick prompt chips -->
+        <div
+          style="padding:0.75rem 0;display:flex;gap:0.4rem;overflow-x:auto;border-bottom:1px solid rgba(122,31,61,0.06);"
+          id="cfo-chips-row">
+          <button class="sample-receipt-pill cfo-prompt-chip" data-prompt="Can I afford scuba diving tomorrow?">🤿 Can I
+            afford scuba diving tomorrow?</button>
+          <button class="sample-receipt-pill cfo-prompt-chip" data-prompt="How much did we spend on food?">🍽️ Food
+            budget breakdown?</button>
+          <button class="sample-receipt-pill cfo-prompt-chip" data-prompt="Who owes me money?">👥 Who owes me
+            money?</button>
+          <button class="sample-receipt-pill cfo-prompt-chip" data-prompt="Will we exceed our budget?">🚨 Will we exceed
+            our budget?</button>
+          <button class="sample-receipt-pill cfo-prompt-chip"
+            data-prompt="Give me suggestions to optimize our budget">💡 Give me budget saving suggestions</button>
+        </div>
+
+        <div class="cfo-chat" id="cfo-chat-messages" style="flex:1;overflow-y:auto;padding:1rem 0;">
+          <div class="cfo-msg cfo-bot">
+            <span class="cfo-avatar">🤖</span>
+            <div class="cfo-bubble">
+              Hello! I am your <strong>AI Travel CFO</strong>. I monitor your live trip ledger, convert all foreign
+              currencies, and ensure your group stays on budget.<br /><br />
+              Ask me anything, like <em>"Can I afford scuba diving tomorrow?"</em> or click one of the quick suggestions
+              above.
+            </div>
+          </div>
+        </div>
+
+        <div class="cfo-input-row" style="padding-top:0.75rem;border-top:1px solid rgba(122,31,61,0.08);">
+          <input type="text" id="cfo-input" class="input" placeholder="Ask your Travel CFO anything..." />
+          <button class="btn btn-primary" id="btn-cfo-send">Send</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION 8: Post-Trip Summary Report ═════════════════════════ -->
+    <section id="summary" class="section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">📊 Executive Post-Trip Financial Audit</h2>
+          <p class="section-subtitle">Stunning AI-generated trip review, health scorecard, and printable report.</p>
+        </div>
+        <div style="display:flex;gap:0.5rem;">
+          <button class="btn btn-ghost" id="btn-print-report">🖨️ Download PDF</button>
+          <button class="btn btn-primary" id="btn-share-report">🔗 Share Report</button>
+        </div>
+      </div>
+
+      <div class="summary-report-card" id="printable-summary-card">
+        <div
+          style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid rgba(122,31,61,0.1);padding-bottom:1.5rem;margin-bottom:1.5rem;">
+          <div>
+            <span
+              style="font-size:0.75rem;letter-spacing:0.08em;color:var(--primary);text-transform:uppercase;font-weight:700;">Executive
+              Travel CFO Audit</span>
+            <h1 style="font-family:var(--font-display);font-size:2rem;color:var(--text-primary);margin-top:0.25rem;"
+              id="audit-trip-name">Goa Celebration 2026</h1>
+            <p style="color:var(--text-secondary);font-size:0.9rem;" id="audit-trip-meta">7 Days · 4 Companions · INR
+              Baseline</p>
+          </div>
+          <div style="text-align:right;display:flex;align-items:center;gap:1rem;">
+            <div style="text-align:right;">
+              <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Financial Health</span>
+              <strong style="color:#059669;font-size:1.1rem;">Optimal (88%)</strong>
+            </div>
+            <div class="health-grade-badge">A-</div>
+          </div>
+        </div>
+
+        <!-- Metric Grid -->
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:1rem;margin-bottom:2rem;">
+          <div style="background:var(--bg-canvas);padding:1.25rem;border-radius:var(--r-md);text-align:center;">
+            <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Total Budget</span>
+            <strong id="audit-budget" style="font-family:var(--font-mono);font-size:1.3rem;">₹50,000</strong>
+          </div>
+          <div style="background:var(--bg-canvas);padding:1.25rem;border-radius:var(--r-md);text-align:center;">
+            <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Total Spent</span>
+            <strong id="audit-spent"
+              style="font-family:var(--font-mono);font-size:1.3rem;color:var(--primary);">₹30,688</strong>
+          </div>
+          <div style="background:var(--bg-canvas);padding:1.25rem;border-radius:var(--r-md);text-align:center;">
+            <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Net Savings</span>
+            <strong id="audit-savings"
+              style="font-family:var(--font-mono);font-size:1.3rem;color:#059669;">₹19,312</strong>
+          </div>
+          <div style="background:var(--bg-canvas);padding:1.25rem;border-radius:var(--r-md);text-align:center;">
+            <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Daily Avg Burn</span>
+            <strong id="audit-daily-burn" style="font-family:var(--font-mono);font-size:1.3rem;">₹4,384</strong>
+          </div>
+        </div>
+
+        <!-- Audit Insights Block -->
+        <div
+          style="background:linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,248,241,0.8));border:1px solid rgba(122,31,61,0.1);border-radius:var(--r-lg);padding:1.5rem;margin-bottom:2rem;">
+          <h3 style="font-family:var(--font-display);font-size:1.2rem;font-weight:700;margin-bottom:0.75rem;">
+            🤖 AI CFO Executive Takeaways
+          </h3>
+          <ul style="padding-left:1.25rem;color:var(--text-secondary);font-size:0.92rem;line-height:1.7;">
+            <li><strong>Budget Efficiency:</strong> Overall expenditure operated at <strong>61.4%</strong> of allocated
+              budget runway, generating substantial surplus.</li>
+            <li><strong>Foreign Exchange Audit:</strong> Successfully processed foreign transactions (including USD $55
+              dinner) without IEEE floating-point imprecision.</li>
+            <li><strong>Category Divergence:</strong> Food category overshot its cap by 18% (due to USD currency
+              conversion), which was successfully offset by transport and activity savings.</li>
+            <li><strong>Settlement Summary:</strong> 3 debt transactions required to achieve net zero reconciliation
+              across all 4 participants.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ─── MODAL 1: Add Expense Modal ──────────────────────────────────── -->
+  <div class="modal-overlay" id="expense-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="modal-title">Add New Expense</h2>
+          <p style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">Automatic real-time FX conversion to trip
+            base currency</p>
+        </div>
+        <button class="modal-close" id="btn-modal-close" aria-label="Close modal">✕</button>
+      </div>
+      <form id="expense-form" class="form" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Title / Merchant *</label>
+            <input type="text" id="exp-title" class="input" placeholder="e.g. Grande Restaurant" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category *</label>
+            <select id="exp-category" class="select" required>
+              <option value="">Select category...</option>
+              <option value="accommodation">🏨 Accommodation</option>
+              <option value="transport">🚗 Transport</option>
+              <option value="food">🍽️ Food</option>
+              <option value="activities">🎯 Activities</option>
+              <option value="shopping">🛍️ Shopping</option>
+              <option value="health">💊 Health</option>
+              <option value="entertainment">🎭 Entertainment</option>
+              <option value="misc">📦 Misc</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Amount *</label>
+            <input type="number" id="exp-amount" class="input" placeholder="0.00" step="0.01" min="0.01" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Expense Currency *</label>
+            <select id="exp-currency" class="select" required>
+              <option value="INR">🇮🇳 INR (₹)</option>
+              <option value="USD">🇺🇸 USD ($)</option>
+              <option value="EUR">🇪🇺 EUR (€)</option>
+              <option value="GBP">🇬🇧 GBP (£)</option>
+              <option value="THB">🇹🇭 THB (฿)</option>
+              <option value="SGD">🇸🇬 SGD (S$)</option>
+              <option value="JPY">🇯🇵 JPY (¥)</option>
+              <option value="AED">🇦🇪 AED (د.إ)</option>
+              <option value="AUD">🇦🇺 AUD (A$)</option>
+              <option value="CAD">🇨🇦 CAD (C$)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Live Conversion Indicator inside modal -->
+        <div id="modal-fx-indicator"
+          style="display:none;background:var(--bg-canvas);border:1px dashed rgba(122,31,61,0.25);border-radius:var(--r-md);padding:0.6rem;font-size:0.82rem;font-family:var(--font-mono);margin-bottom:1rem;color:var(--primary);text-align:center;">
+          <!-- dynamic text -->
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Date *</label>
+            <input type="date" id="exp-date" class="input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Paid By *</label>
+            <select id="exp-payer" class="select" required>
+              <option value="">Select payer...</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Split Type</label>
+          <select id="exp-split" class="select">
+            <option value="equal">Equal Split Across Group</option>
+            <option value="none">Personal Expense (No Split)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <input type="text" id="exp-notes" class="input" placeholder="e.g. Table 5 seaside dinner" />
+        </div>
+        <div class="form-error" id="expense-form-error" role="alert"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="btn-cancel-expense">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-expense">Add Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── MODAL 2: Multimodal OCR Scanner Modal ───────────────────────── -->
+  <!-- ─── MODAL 2: Receipt OCR Scanner ──────────────────────────────── -->
+  <div class="modal-overlay" id="ocr-modal" role="dialog" aria-modal="true" aria-labelledby="ocr-modal-title">
+    <div class="modal" style="max-width:580px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="ocr-modal-title">Multimodal Receipt Scanner</h2>
+          <p style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">AI Computer Vision with currency, tax &
+            line-item extraction</p>
+        </div>
+        <button class="modal-close" id="btn-ocr-close" aria-label="Close modal">✕</button>
+      </div>
+
+      <div class="scanner-viewport" id="ocr-drop-zone">
+        <div class="laser-beam" id="laser-beam"></div>
+        <div id="ocr-drop-content">
+          <div style="font-size:2.5rem;margin-bottom:0.5rem;">📷</div>
+          <h4 style="font-weight:700;margin-bottom:0.25rem;">Drag & drop receipt image</h4>
+          <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;">Upload any bill, receipt, or invoice
+            (JPG, PNG, WebP)</p>
+          <input type="file" id="ocr-file-input" accept="image/*" style="display:none;" />
+          <button class="btn btn-ghost btn-sm" id="btn-pick-file">Choose Local File</button>
+        </div>
+
+        <!-- Uploaded Image Thumbnail Preview -->
+        <div id="ocr-preview-box" class="ocr-preview-box" style="display:none;width:100%;">
+          <img id="ocr-thumb-img" class="ocr-thumb-img" src="" alt="Receipt preview" />
+          <div style="flex:1;overflow:hidden;text-align:left;">
+            <div id="ocr-file-name"
+              style="font-weight:700;font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-primary);">
+              receipt.jpg</div>
+            <div id="ocr-file-size" style="font-size:0.72rem;color:var(--text-muted);">Ready to scan with AI</div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btn-run-file-ocr">⚡ Scan Now</button>
+        </div>
+      </div>
+
+      <div style="margin-top:1rem;">
+        <span style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Try Clickable
+          Preset Receipts:</span>
+        <div style="margin-top:0.35rem;display:flex;flex-wrap:wrap;gap:0.35rem;">
+          <button class="sample-receipt-pill" id="btn-sample-goa">🦐 Goa Dinner ($55 USD)</button>
+          <button class="sample-receipt-pill" id="btn-sample-paris">🥐 Paris Bistro (€42 EUR)</button>
+          <button class="sample-receipt-pill" id="btn-sample-tokyo">🍣 Tokyo Sushi (¥8,500 JPY)</button>
+          <button class="sample-receipt-pill" id="btn-sample-london">🇬🇧 London Pub (£37 GBP)</button>
+          <button class="sample-receipt-pill" id="btn-sample-dubai">🏜️ Dubai Grill (149 AED)</button>
+        </div>
+      </div>
+
+      <div id="ocr-result-display"
+        style="display:none;margin-top:1.25rem;background:var(--bg-canvas);padding:1rem;border-radius:var(--r-md);border:1px solid rgba(122,31,61,0.1);">
+        <!-- dynamic OCR output -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── MODAL 3: Natural Language Expense Entry Modal (⌘K) ───────────── -->
+  <div class="modal-overlay" id="nl-modal" role="dialog" aria-modal="true" aria-labelledby="nl-modal-title">
+    <div class="modal" style="max-width:540px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="nl-modal-title">Natural Language Entry</h2>
+          <p style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">AI parses amount, payer, split
+            participants & currency</p>
+        </div>
+        <button class="modal-close" id="btn-nl-close" aria-label="Close modal">✕</button>
+      </div>
+
+      <div style="margin-bottom:1rem;">
+        <textarea id="nl-modal-textarea" class="textarea" rows="3"
+          placeholder='e.g. "Add ₹1500 dinner split between Lavanya and Rahul"'></textarea>
+        <div style="margin-top:0.5rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
+          <button class="sample-receipt-pill nl-quick-chip"
+            data-text="Add ₹1500 dinner split between Lavanya and Rahul">₹1500 Dinner split with Lavanya &
+            Rahul</button>
+          <button class="sample-receipt-pill nl-quick-chip" data-text="$45 airport taxi paid by Rahul">$45 Airport Taxi
+            paid by Rahul</button>
+          <button class="sample-receipt-pill nl-quick-chip" data-text="€80 boat tour tickets for everyone">€80 Boat Tour
+            tickets</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-full" id="btn-nl-modal-parse">Parse Structured Expense</button>
+
+      <div id="nl-modal-preview" style="display:none;margin-top:1.25rem;"></div>
+    </div>
+  </div>
+
+  <!-- ─── MODAL 4: Streamlined New Trip Creation Modal ───────────────────── -->
+  <div class="modal-overlay" id="onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+    <div class="onboarding-container" style="max-width:620px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;">
+        <div>
+          <span style="font-size:0.75rem;color:var(--primary);font-weight:700;text-transform:uppercase;">Intelligent
+            Setup</span>
+          <h2 class="modal-title" id="onboarding-title" style="font-size:1.35rem;">Plan Your New Journey</h2>
+        </div>
+        <button class="modal-close" id="btn-onboarding-close" aria-label="Close wizard">✕</button>
+      </div>
+
+      <!-- Solo vs Group Selector -->
+      <div class="trip-type-toggle-group" style="margin-bottom:0.75rem;">
+        <button type="button" class="trip-type-btn active" id="btn-trip-type-solo">
+          <span>🧍</span> Solo Trip
+        </button>
+        <button type="button" class="trip-type-btn" id="btn-trip-type-group">
+          <span>👥</span> Group Trip
+        </button>
+      </div>
+
+      <!-- Source and Destination -->
+      <div class="form-row" style="margin-bottom:0.5rem;">
+        <div class="form-group">
+          <label class="form-label" for="trip-source-input" style="font-size:0.75rem;margin-bottom:0.25rem;">Starting
+            City (Source)</label>
+          <input type="text" id="trip-source-input" class="input" placeholder="e.g. Bangalore, Mumbai, London"
+            value="Bangalore" style="padding:0.45rem 0.75rem;" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="trip-dest-input"
+            style="font-size:0.75rem;margin-bottom:0.25rem;">Destination</label>
+          <input type="text" id="trip-dest-input" class="input" placeholder="e.g. Goa, Paris, Bali, Tokyo" value="Goa"
+            style="padding:0.45rem 0.75rem;" />
+        </div>
+      </div>
+
+      <!-- Quick Destination Preset Pills -->
+      <div style="margin-bottom:0.75rem;">
+        <span style="font-size:0.7rem;color:var(--text-muted);font-weight:600;">Popular Destinations:</span>
+        <div class="dest-pills-row" id="trip-dest-pills" style="margin-top:0.3rem;">
+          <button type="button" class="dest-preset-pill active" data-dest="Goa">🏖️ Goa</button>
+          <button type="button" class="dest-preset-pill" data-dest="Paris">🥐 Paris</button>
+          <button type="button" class="dest-preset-pill" data-dest="Bali">🌺 Bali</button>
+          <button type="button" class="dest-preset-pill" data-dest="Tokyo">🗼 Tokyo</button>
+          <button type="button" class="dest-preset-pill" data-dest="Dubai">🏜️ Dubai</button>
+          <button type="button" class="dest-preset-pill" data-dest="Kashmir">🏔️ Kashmir</button>
+          <button type="button" class="dest-preset-pill" data-dest="London">🇬🇧 London</button>
+        </div>
+      </div>
+
+      <!-- Dynamic Traveler Input: Solo ("The Person") vs Group ("The People") -->
+      <div id="wrap-solo-traveler" style="margin-bottom:0.75rem;">
+        <div class="form-group">
+          <label class="form-label" for="trip-solo-person" style="font-size:0.75rem;margin-bottom:0.25rem;">
+            <span>👤 The Person</span>
+            <span style="font-size:0.7rem;color:var(--text-muted);font-weight:normal;margin-left:6px;">(Traveler
+              Name)</span>
+          </label>
+          <input type="text" id="trip-solo-person" class="input" placeholder="e.g. Anil Kumar" value="Anil Kumar"
+            style="padding:0.45rem 0.75rem;" />
+        </div>
+      </div>
+
+      <div id="wrap-group-travelers" style="display:none;margin-bottom:0.75rem;">
+        <div class="form-group">
+          <label class="form-label" for="trip-group-people" style="font-size:0.75rem;margin-bottom:0.25rem;">
+            <span>👥 The People</span>
+            <span style="font-size:0.7rem;color:var(--text-muted);font-weight:normal;margin-left:6px;">(Companions,
+              separated by commas)</span>
+          </label>
+          <input type="text" id="trip-group-people" class="input"
+            placeholder="e.g. Anil Kumar, Lavanya Sharma, Rahul Menon, Priya Nair"
+            value="Anil Kumar, Lavanya Sharma, Rahul Menon, Priya Nair" style="padding:0.45rem 0.75rem;" />
+          <span style="font-size:0.68rem;color:var(--text-muted);display:block;margin-top:2px;">
+            Balances and debts will be automatically calculated and minimized across these members.
+          </span>
+        </div>
+      </div>
+
+      <!-- Budget & Duration Choices -->
+      <div class="form-row" style="margin-bottom:0.75rem;">
+        <div class="form-group" style="flex:1.5;">
+          <label class="form-label" for="trip-budget-val" style="font-size:0.75rem;margin-bottom:0.25rem;">Total
+            Budget</label>
+          <input type="number" id="trip-budget-val" class="input" placeholder="50000" value="50000"
+            style="padding:0.45rem 0.75rem;" />
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label" for="trip-currency-val" style="font-size:0.75rem;margin-bottom:0.25rem;">Base
+            Currency</label>
+          <select id="trip-currency-val" class="select" style="padding:0.45rem 0.75rem;">
+            <option value="INR" selected>🇮🇳 INR (₹)</option>
+            <option value="USD">🇺🇸 USD ($)</option>
+            <option value="EUR">🇪🇺 EUR (€)</option>
+            <option value="GBP">🇬🇧 GBP (£)</option>
+            <option value="AED">🇦🇪 AED (د.إ)</option>
+            <option value="JPY">🇯🇵 JPY (¥)</option>
+            <option value="THB">🇹🇭 THB (฿)</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:0.8;">
+          <label class="form-label" for="trip-duration-val"
+            style="font-size:0.75rem;margin-bottom:0.25rem;">Days</label>
+          <input type="number" id="trip-duration-val" class="input" placeholder="5" value="5" min="1" max="60"
+            style="padding:0.45rem 0.75rem;" />
+        </div>
+      </div>
+
+      <!-- Travel Style / Vibe Choice -->
+      <div style="margin-bottom:0.5rem;">
+        <label class="form-label" style="font-size:0.75rem;margin-bottom:0.25rem;">Travel Style Choice</label>
+        <div class="style-grid" id="trip-style-selector">
+          <div class="style-card" data-style="budget">
+            <div style="font-size:1.25rem;">🎒</div>
+            <strong style="display:block;font-size:0.8rem;margin-top:0.15rem;">Budget Backpacker</strong>
+            <span style="font-size:0.68rem;color:var(--text-muted);">Street food & hostels</span>
+          </div>
+          <div class="style-card selected" data-style="moderate">
+            <div style="font-size:1.25rem;">🧭</div>
+            <strong style="display:block;font-size:0.8rem;margin-top:0.15rem;">Moderate Explorer</strong>
+            <span style="font-size:0.68rem;color:var(--text-muted);">Boutiques & comfort</span>
+          </div>
+          <div class="style-card" data-style="luxury">
+            <div style="font-size:1.25rem;">👑</div>
+            <strong style="display:block;font-size:0.8rem;margin-top:0.15rem;">Luxury Jetsetter</strong>
+            <span style="font-size:0.68rem;color:var(--text-muted);">5-star resorts & dining</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sticky Submit Action Footer (Always Visible) -->
+      <div class="onboarding-submit-footer">
+        <button class="btn btn-primary btn-full" id="btn-create-trip-streamlined"
+          style="font-size:0.95rem;padding:0.8rem;box-shadow:0 4px 16px rgba(122,31,61,0.35);">
+          🚀 Create Trip & Launch AI CFO
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ─── MODAL 4B: Add / Edit Itinerary Place Modal ────────────────────── -->
+  <div class="modal-overlay" id="itinerary-place-modal" role="dialog" aria-modal="true"
+    aria-labelledby="place-modal-title">
+    <div class="modal" style="max-width:540px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="place-modal-title">📍 Add Place to Itinerary</h2>
+          <p class="modal-subtitle">Tag place category, timing, and pin to interactive trip map</p>
+        </div>
+        <button class="modal-close" id="btn-place-modal-close" aria-label="Close modal">✕</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:1rem;margin-top:1rem;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label" for="modal-place-day">Trip Day *</label>
+            <select id="modal-place-day" class="select select-sm"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modal-place-type">Activity Type</label>
+            <select id="modal-place-type" class="select select-sm">
+              <option value="activity">🎯 Activity / Attraction</option>
+              <option value="meal">🍽️ Meal / Dining</option>
+              <option value="hotel">🏨 Hotel / Stay</option>
+              <option value="transport">🚗 Transport / Cab</option>
+              <option value="flight">✈️ Flight</option>
+              <option value="other">📦 Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-place-title">Place / Activity Name *</label>
+          <input type="text" id="modal-place-title" class="input"
+            placeholder="e.g. Aguada Fort Sunset Point, Britto's..." />
+        </div>
+
+        <!-- Price Tier Selection (Free, Budget-Friendly, Expensive) -->
+        <div class="form-group">
+          <label class="form-label">Price Category *</label>
+          <div class="cost-tier-options">
+            <div class="tier-option-label" data-tier="free" id="tier-opt-free">
+              <span style="font-size:1.2rem;">🟢</span>
+              <span class="tier-opt-title" style="color:#059669;">Free</span>
+              <span class="tier-opt-sub">₹0 (Beaches, walks)</span>
+            </div>
+            <div class="tier-option-label selected-budget" data-tier="budget" id="tier-opt-budget">
+              <span style="font-size:1.2rem;">🟡</span>
+              <span class="tier-opt-title" style="color:#D97706;">Budget-Friendly</span>
+              <span class="tier-opt-sub">Under ₹1,500</span>
+            </div>
+            <div class="tier-option-label" data-tier="expensive" id="tier-opt-expensive">
+              <span style="font-size:1.2rem;">🔴</span>
+              <span class="tier-opt-title" style="color:#E11D48;">Expensive</span>
+              <span class="tier-opt-sub">Over ₹1,500 / Splurge</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label" for="modal-place-cost">Estimated Cost (<span
+                id="modal-place-cur-symbol">₹</span>)</label>
+            <input type="number" id="modal-place-cost" class="input" placeholder="0" value="500" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modal-place-location">Location / Area</label>
+            <input type="text" id="modal-place-location" class="input" placeholder="e.g. Candolim, North Goa" />
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label" for="modal-place-start">Start Time</label>
+            <input type="time" id="modal-place-start" class="input" value="10:00" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modal-place-end">End Time</label>
+            <input type="time" id="modal-place-end" class="input" value="12:00" />
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label" for="modal-place-lat">Latitude (Map pin)</label>
+            <input type="number" step="0.0001" id="modal-place-lat" class="input input-sm" placeholder="e.g. 15.4921" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modal-place-lng">Longitude (Map pin)</label>
+            <input type="number" step="0.0001" id="modal-place-lng" class="input input-sm" placeholder="e.g. 73.7736" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-place-notes">Notes / Tips</label>
+          <textarea id="modal-place-notes" class="textarea" rows="2"
+            placeholder="e.g. Carry sunglasses, book tickets in advance..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="btn-place-modal-cancel">Cancel</button>
+          <button class="btn btn-primary" id="btn-place-modal-save">💾 Save Place</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── MODAL 5: Authentication Modal ───────────────────────────────── -->
+  <div class="modal-overlay" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+    <div class="auth-box">
+      <div style="text-align:right;">
+        <button class="modal-close" id="btn-auth-close" aria-label="Close auth modal">✕</button>
+      </div>
+      <div style="font-size:2rem;margin-bottom:0.5rem;">✈️</div>
+      <h2 style="font-family:var(--font-display);font-size:1.5rem;font-weight:700;" id="auth-modal-title">Welcome to
+        WanderWallet</h2>
+      <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1.5rem;">Your intelligent travel financial
+        companion</p>
+
+      <button class="btn btn-full btn-google" id="btn-google-auth">
+        <svg width="18" height="18" viewBox="0 0 24 24">
+          <path fill="#4285F4"
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+          <path fill="#34A853"
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+          <path fill="#FBBC05"
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+          <path fill="#EA4335"
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+        </svg>
+        Continue with Google
+      </button>
+
+      <div class="auth-divider">or email</div>
+
+      <div style="display:flex;flex-direction:column;gap:0.75rem;text-align:left;">
+        <input type="email" id="auth-email" class="input" placeholder="traveller@example.com"
+          value="anil@example.com" />
+        <input type="password" id="auth-password" class="input" placeholder="Password" value="••••••••" />
+        <button class="btn btn-primary btn-full" id="btn-email-auth">Sign In</button>
+      </div>
+
+      <button class="btn btn-ghost btn-sm btn-full" id="btn-demo-auth"
+        style="margin-top:1rem;border:none;color:var(--text-muted);">
+        ⚡ Continue as Demo Traveler (Anil Kumar)
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── Toast Container ───────────────────────────────────────────── -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- App Logic -->
+  <script src="app.js"></script>
+</body>
+
+</html>
